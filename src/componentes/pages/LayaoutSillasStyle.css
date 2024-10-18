@@ -1,0 +1,43 @@
+.titulo {
+    text-align: center;
+    color: #676767;
+    font-weight: 300;
+}
+
+.teatro {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.asiento {
+    border: 2px solid black;
+    margin: 2px;
+    padding: 6px;
+    text-align: center;
+}
+
+.letraDerecha {
+    margin-right: 20px;
+    font-size: 29px;
+    font-weight: bold
+}
+
+.letraIzquierda {
+    margin-left: 20px;
+    font-size: 29px;
+    font-weight: bold
+}
+
+.asiento-seleccionado {
+    background-color: #ffcc66;
+}
+
+.asiento-reservado {
+    background-color: #ff7e7e;
+}
+
+.asiento-disponible {
+    background-color: #a6ffad;
+}

@@ -1,0 +1,21 @@
+.container {
+    display: grid;
+    grid-template-columns: 1fr 0.5fr;
+    grid-template-rows: 1fr;
+    gap: 0px 15px;
+    grid-template-areas:
+        ". .";
+    padding: 15px;
+}
+
+.input {
+    width: 70%;
+    margin: 15px;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    padding: 2%;
+    align-items: center;
+}
