@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import {
   Button, DataTable, Column,
   FilterMatchMode, InputText, Toast,
-  confirmDialog, ConfirmDialog
+  confirmDialog, ConfirmDialog, Chip, Dropdown
 } from "primereact";
 import DatePicker from 'react-date-picker';
 import 'react-date-picker/dist/DatePicker.css';
@@ -23,12 +23,15 @@ export const Evento = () => {
     estado: 'Programado',
     sillas: []
   })
+  const [disabled, setdisabled] = useState(false);
+  const estados = ['Programado', 'Finalizado'];
 
   const toast = useRef(null);
 
   const createToast = (severity, summary, detail) => {
     toast.current.show({ severity, summary, detail, life: 6000 });
   };
+
   useEffect(() => {
     apiControlTeatro.get('evento', '').then(({ data }) => {
       setlistEventos(data)
@@ -126,6 +129,7 @@ export const Evento = () => {
   const onCellSelect = (event) => {
     if (event.cellIndex === 0) {
       setselectedEvento(event.rowData._id);
+      setdisabled(false);
       setvalueForm({
         nombre: event.rowData.nombre,
         encargado: event.rowData.encargado,
@@ -134,8 +138,19 @@ export const Evento = () => {
       })
     }
     if (event.cellIndex === 1) {
+      setdisabled(false);
       setselectedEvento(event.rowData._id);
       handleDelete();
+    }
+    if (event.cellIndex === 2) {
+      setselectedEvento(event.rowData._id);
+      setdisabled(true);
+      setvalueForm({
+        nombre: event.rowData.nombre,
+        encargado: event.rowData.encargado,
+        fecha: new Date(event.rowData.fecha),
+        estado: event.rowData.estado,
+      })
     }
   };
 
@@ -212,6 +227,11 @@ export const Evento = () => {
       <i className="pi pi-trash" style={{ color: 'red' }}></i>);
   };
 
+  const renderEstadoButton = (value) => {
+    return (
+      <Chip label="Cambiar estado" />)
+  };
+
   const [filters] = useState({
     nombre: { value: '', matchMode: FilterMatchMode.STARTS_WITH },
     encargado: { value: '', matchMode: FilterMatchMode.STARTS_WITH },
@@ -242,8 +262,8 @@ export const Evento = () => {
           stripedRows
           sortMode="multiple"
           paginator
-          rows={10}
-          rowsPerPageOptions={[10, 20, 30, 40, 50]}
+          rows={5}
+          rowsPerPageOptions={[5,10, 20, 30, 40, 50]}
           filters={filters}
           filterDisplay='row'
           selectionMode="single"
@@ -256,6 +276,7 @@ export const Evento = () => {
         >
           <Column body={renderEditButton} style={{ textAlign: 'center' }}></Column>
           <Column body={renderDeleteButton} style={{ textAlign: 'center' }}></Column>
+          <Column body={renderEstadoButton} style={{ textAlign: 'center' }}></Column>
           <Column field="nombre" header="Nombre" sortable filter ></Column>
           <Column field="encargado" header="Encargado" filter ></Column>
           <Column field="fecha" header="Fecha" body={(data) => fechaBodyTemplate(data.fecha)}></Column>
@@ -267,6 +288,7 @@ export const Evento = () => {
             <div className="flex flex-column gap-2 input">
               <label htmlFor="nombre" style={{ fontWeight: 100 }}>Nombre</label>
               <InputText
+                disabled={disabled}
                 type="text"
                 id="nombre"
                 name="nombre"
@@ -278,6 +300,7 @@ export const Evento = () => {
             <div className="flex flex-column gap-2 input">
               <label htmlFor="encargado" style={{ fontWeight: 100 }}>Encargado</label>
               <InputText
+                disabled={disabled}
                 type="text"
                 id="encargado"
                 name="encargado"
@@ -287,6 +310,7 @@ export const Evento = () => {
               />
             </div>
             <DatePicker
+              disabled={disabled}
               onChange={(e) => {
                 setvalueForm({
                   ...valueForm,
@@ -297,6 +321,18 @@ export const Evento = () => {
               value={valueForm.fecha}
               format='dd-MM-y'
             />
+            {
+              disabled &&
+              <div className="flex flex-column gap-2 input">
+                <label htmlFor="estado" style={{ fontWeight: 100 }}>Estado</label>
+                <Dropdown value={valueForm.estado}
+                  onChange={(e) => setvalueForm({ ...valueForm, estado: e.value })}
+                  options={estados} optionLabel="estado"
+                  placeholder="Selecciona"
+                  className="w-full md:w-14rem" />
+              </div>
+
+            }
             <br />
             <br />
             <br />

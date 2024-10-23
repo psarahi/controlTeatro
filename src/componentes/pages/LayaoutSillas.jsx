@@ -1,15 +1,31 @@
-import React, { useEffect, useState } from 'react'
-import { Checkbox, Button } from "primereact";
+import React, { useEffect, useRef, useState } from 'react'
+import { Checkbox, Button, Dropdown, Toast } from "primereact";
 
 import { apiControlTeatro } from '../../service/apiControlTeatro';
 import './LayaoutSillasStyle.css'
+import { textValidator } from '../../helpers/validator';
 
 export const LayaoutSillas = () => {
-  const [listSillas, setlistSillas] = useState([])
-  const [checked, setChecked] = useState(false);
-  let sillas = [{}];
+  const [listSillas, setlistSillas] = useState([]);
+  const [eventoOptions, setEventoOptions] = useState([]);
+  const [listEventos, setlistEventos] = useState([]);
+  const [selectedEvento, setselectedEvento] = useState('');
+  const [selectedSilla, setSelectedSilla] = useState([
+    // 'A1', 'A2', 'A3', 'A4', 'A5',
+    // 'B1', 'B2', 'B3', 'B4', 'B5',
+    // 'C1', 'C2', 'C3', 'C4', 'C5',
+    // 'D1', 'D2', 'D3', 'D4', 'D5',
+    // 'E1', 'E2', 'E3', 'E4', 'E5',
+  ]);
+  const toast = useRef(null);
 
+  const createToast = (severity, summary, detail) => {
+    toast.current.show({ severity, summary, detail, life: 8000 });
+  };
   useEffect(() => {
+    let sillas = [{}];
+    let eventos = [];
+
     apiControlTeatro.get('silla', '').then(({ data }) => {
       let datos = data.sort((a, b) => b.fila.localeCompare(a.fila));
       let asientos = [];
@@ -33,13 +49,108 @@ export const LayaoutSillas = () => {
       console.log(sillas);
 
     })
-    cleanForm();
-  }, [])
 
-  const cleanForm = () => { };
+    apiControlTeatro.get('/evento/programado', '').then(({ data }) => {
+      console.log(data);
+      setlistEventos(data);
+      data.forEach(e => {
+        eventos.push(e.nombre);
+      });
+      setEventoOptions(eventos);
+    });
+
+    //apiControlTeatro.get
+    clean();
+  }, []);
+
+  const clean = () => {
+    setSelectedSilla([]);
+    setselectedEvento('');
+
+    apiControlTeatro.get('/evento/programado', '').then(({ data }) => {
+      setlistEventos(data);
+    });
+  };
+
+  const onSillaChange = (e) => {
+    console.log(e);
+
+    let _sillas = [...selectedSilla];
+
+    if (e.checked)
+      _sillas.push(e.value);
+    else
+      _sillas.splice(_sillas.indexOf(e.value), 1);
+
+
+    setSelectedSilla(_sillas);
+  }
+
+  const guardarAsientos = () => {
+
+    if (!textValidator(selectedEvento)) {
+      createToast(
+        'warn',
+        'Error',
+        'Debe seleccionar un evento'
+      );
+      return;
+    }
+    apiControlTeatro.put(`/evento/nombre`,
+      {
+        nombre: selectedEvento,
+        sillas: selectedSilla,
+      })
+      .then((response) => {
+
+        if (response.status === 202) {
+          createToast(
+            'success',
+            'Confirmado',
+            'Selección de sillas guardado exitosamente'
+          );
+          clean();
+        } else {
+          createToast(
+            'error',
+            'Error',
+            response.statusText,
+          );
+          return;
+          clean();
+        }
+      })
+      .catch((err) => {
+        createToast(
+          'error',
+          'Error',
+          'Ha ocurrido un error al intentar guardar selección'
+        );
+        console.log(err);
+        clean();
+      });
+  }
+
+  const onChangeEvento = (e) => {
+    setselectedEvento(e.value);
+    let silla = listEventos.filter(x => x.nombre === e.value);
+    setSelectedSilla(silla[0].sillas);
+  };
 
   return (
     <>
+      <Toast ref={toast} />
+      <br />
+      <div className="card flex justify-content-center" style={{ gap: '15px' }}>
+        <Dropdown
+          value={selectedEvento}
+          onChange={(e) => onChangeEvento(e)}
+          options={eventoOptions}
+          optionLabel="nombre"
+          placeholder="Selecciona evento"
+          className="w-full md:w-14rem" />
+        <Button label="Guardar" severity="info" onClick={guardarAsientos} />
+      </div>
       <h1 className='titulo'>Front</h1>
       {
         listSillas.map((fila) => (
@@ -47,17 +158,15 @@ export const LayaoutSillas = () => {
             <p className='letraDerecha'>{fila.fila}</p>
             {
               fila.sillas.map(silla => (
-                <div key={silla} className='asiento asiento-disponible'>
+                <div key={`${fila.fila}${silla}`}
+                  className={`asiento ${selectedSilla.includes(`${fila.fila}${silla}`) ?
+                    "asiento-reservado" : "asiento-disponible"}`}>
                   <Checkbox
-                    id={`${silla}${fila.fila}`}
-                    onChange={e => {
-                      console.log(e);
-
-                      setChecked(e.checked)
-                    }}
-                    checked={checked}>
-
-                  </Checkbox>
+                    inputId={`${fila.fila}${silla}`}
+                    onChange={onSillaChange}
+                    checked={selectedSilla.includes(`${fila.fila}${silla}`)}
+                    value={`${fila.fila}${silla}`}
+                  />
                   <p style={{ fontWeight: 900 }}>{silla}</p>
                 </div>
               ))
