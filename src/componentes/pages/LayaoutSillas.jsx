@@ -102,14 +102,17 @@ export const LayaoutSillas = () => {
         sillas: selectedSilla,
       })
       .then((response) => {
-
+        console.log(response);
+        
         if (response.status === 202) {
+       let eventoFilter = listEventos.filter(evento => evento.nombre !== selectedEvento);
+          setlistEventos([...eventoFilter, response.data]);
+
           createToast(
             'success',
             'Confirmado',
             'Selección de sillas guardado exitosamente'
           );
-          clean();
         } else {
           createToast(
             'error',
@@ -148,8 +151,9 @@ export const LayaoutSillas = () => {
           options={eventoOptions}
           optionLabel="nombre"
           placeholder="Selecciona evento"
-          className="w-full md:w-14rem" />
+          className="w-full md:w-25rem" />
         <Button label="Guardar" severity="info" onClick={guardarAsientos} />
+        <Button label="Limpiar" severity="warning" onClick={clean} />
       </div>
       <h1 className='titulo'>Front</h1>
       {
