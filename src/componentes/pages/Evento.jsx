@@ -337,7 +337,7 @@ export const Evento = () => {
             <br />
             <br />
             <div>
-              <Button label="Cancelar" severity="info" outlined style={{ margin: '10px' }} />
+              <Button label="Cancelar" severity="info" onClick={cleanForm} outlined style={{ margin: '10px' }} />
               <Button label="Guardar" icon="pi file-plus" severity="info" style={{ margin: '10px' }} onClick={onSave} />
 
             </div>
