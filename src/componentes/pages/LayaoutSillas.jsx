@@ -5,6 +5,7 @@ import { apiControlTeatro } from '../../service/apiControlTeatro';
 import './LayaoutSillasStyle.css'
 import { textValidator } from '../../helpers/validator';
 
+document.body.style.zoom = '90%';
 export const LayaoutSillas = () => {
   const [listSillas, setlistSillas] = useState([]);
   const [eventoOptions, setEventoOptions] = useState([]);

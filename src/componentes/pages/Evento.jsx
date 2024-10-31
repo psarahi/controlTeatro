@@ -13,6 +13,7 @@ import './EventoStyle.css'
 import { formatearFecha } from '../../helpers/formatear';
 import { textValidator } from '../../helpers/validator';
 
+document.body.style.zoom = '90%';
 export const Evento = () => {
   const [listEventos, setlistEventos] = useState([]);
   const [selectedEvento, setselectedEvento] = useState(null);
