@@ -155,7 +155,7 @@ export const LayaoutSillas = () => {
         <Button label="Guardar" severity="info" onClick={guardarAsientos} />
         <Button label="Limpiar" severity="warning" onClick={clean} />
       </div>
-      <h1 className='titulo'>Front</h1>
+      <h1 className='titulo'>Back</h1>
       {
         listSillas.map((fila) => (
           <div className='teatro'>
@@ -179,7 +179,7 @@ export const LayaoutSillas = () => {
           </div>
         ))
       }
-      <h1 className='titulo'>In</h1>
+      <h1 className='titulo'>Front</h1>
     </>
   )
 }

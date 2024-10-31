@@ -22,7 +22,8 @@ export const Evento = () => {
     fecha: new Date(),
     estado: 'Programado',
     sillas: []
-  })
+  });
+  let idEvento = '';
   const [disabled, setdisabled] = useState(false);
   const estados = ['Programado', 'Finalizado'];
 
@@ -47,6 +48,8 @@ export const Evento = () => {
       estado: 'Programado',
       sillas: []
     });
+    idEvento = '';
+    setselectedEvento('');
   };
 
   const onSave = () => {
@@ -59,8 +62,8 @@ export const Evento = () => {
       return;
     }
 
-    if (textValidator(selectedEvento)) {
-      apiControlTeatro.put(`evento/${selectedEvento}`, valueForm)
+    if (textValidator(idEvento)) {
+      apiControlTeatro.put(`evento/${idEvento}`, valueForm)
         .then((response) => {
 
           if (response.status === 202) {
@@ -69,7 +72,7 @@ export const Evento = () => {
               'Confirmado',
               'El registro fue editado correctamente'
             );
-            const eventoFiltrados = listEventos.filter((ev) => (ev._id !== selectedEvento));
+            const eventoFiltrados = listEventos.filter((ev) => (ev._id !== idEvento));
             setlistEventos([response.data, ...eventoFiltrados]);
             cleanForm();
           } else {
@@ -100,7 +103,7 @@ export const Evento = () => {
               'Confirmado',
               'El registro fue creado correctamente'
             );
-            setlistEventos([...listEventos, response.data]);
+            setlistEventos([response.data, ...listEventos]);
             cleanForm();
           } else {
             createToast(
@@ -127,8 +130,9 @@ export const Evento = () => {
   };
 
   const onCellSelect = (event) => {
+    idEvento = event.rowData._id;
+    setselectedEvento(event.rowData._id);
     if (event.cellIndex === 0) {
-      setselectedEvento(event.rowData._id);
       setdisabled(false);
       setvalueForm({
         nombre: event.rowData.nombre,
@@ -139,11 +143,9 @@ export const Evento = () => {
     }
     if (event.cellIndex === 1) {
       setdisabled(false);
-      setselectedEvento(event.rowData._id);
       handleDelete();
     }
     if (event.cellIndex === 2) {
-      setselectedEvento(event.rowData._id);
       setdisabled(true);
       setvalueForm({
         nombre: event.rowData.nombre,
@@ -167,8 +169,8 @@ export const Evento = () => {
   };
 
   const acceptDialog = () => {
-    if (textValidator(selectedEvento)) {
-      apiControlTeatro.delete(`evento/${selectedEvento}`)
+    if (textValidator(idEvento)) {
+      apiControlTeatro.delete(`evento/${idEvento}`)
         .then((response) => {
           if (response.status === 200) {
             createToast(
@@ -176,7 +178,7 @@ export const Evento = () => {
               'Confirmado',
               'El registro a sido eliminado'
             );
-            const eventoFiltrado = listEventos.filter((ev) => (ev._id !== selectedEvento));
+            const eventoFiltrado = listEventos.filter((ev) => (ev._id !== idEvento));
             setlistEventos([...eventoFiltrado]);
             cleanForm();
           } else {
@@ -255,7 +257,6 @@ export const Evento = () => {
       <ConfirmDialog />
       <h1 style={{ textAlign: 'center' }}>Lista de Eventos</h1>
       <br />
-      <br />
       <div className='container'>
         <DataTable value={listEventos}
           showGridlines
@@ -263,7 +264,7 @@ export const Evento = () => {
           sortMode="multiple"
           paginator
           rows={5}
-          rowsPerPageOptions={[5,10, 20, 30, 40, 50]}
+          rowsPerPageOptions={[5, 10, 20, 30, 40, 50]}
           filters={filters}
           filterDisplay='row'
           selectionMode="single"
