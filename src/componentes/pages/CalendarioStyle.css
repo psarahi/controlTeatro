@@ -1,0 +1,42 @@
+.divTags{
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-right: 40px;
+}
+
+.divNuevoEvento {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1fr 0.5fr;
+    grid-template-rows: 1fr;
+    gap: 0px 15px;
+    grid-template-areas:
+        ". .";
+    padding: 15px;
+}
+
+.input {
+    width: 70%;
+    margin: 15px;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    padding: 2%;
+    align-items: center;
+}
+
+.form-control{
+    font-size: 18px;
+    padding: 5px;
+    border: 1px solid #ccc;
+}

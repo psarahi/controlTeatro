@@ -1,19 +1,25 @@
 .titulo {
     text-align: center;
-    color: #676767;
+    margin: 6px;
     font-weight: 300;
 }
 
 .teatro {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
+}
+
+.divSelect {
+    display: flex;
+    flex-direction: column;
+    gap: 10px
 }
 
 .asiento {
     border: 2px solid black;
-    margin: 2px;
+    margin: 1px;
     padding: 6px;
     text-align: center;
 }
@@ -41,3 +47,43 @@
 .asiento-disponible {
     background-color: #a6ffad;
 }
+
+.pDatoSillas{
+    font-size: 25px;
+    margin: 0;
+}
+
+.pValorSillas{
+    font-size: 30px;
+}
+
+
+@media only screen and (max-width: 1500px) {
+    .pDatoSillas{
+        font-size: 20px;
+        margin: 0;
+    }
+    
+    .pValorSillas{
+        font-size: 25px;
+    }
+
+    .letraDerecha {
+        margin-right: 20px;
+        font-size: 26px;
+        font-weight: bold
+    }
+    
+    .letraIzquierda {
+        margin-left: 20px;
+        font-size: 26px;
+        font-weight: bold
+    }
+
+    .titulo {
+        font-size: 25px;
+        text-align: center;
+        margin: 5px;
+        font-weight: 300;
+    }
+  }

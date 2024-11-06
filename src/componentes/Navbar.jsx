@@ -14,7 +14,7 @@ export const Navbar = () => {
             }
         },
         {
-            label: 'Sillas',
+            label: 'Asignación de Sillas',
             icon: 'pi pi-ticket',
             command: () => {
                 navigate('layoutSillas')
@@ -24,7 +24,11 @@ export const Navbar = () => {
     return (
         <>
             <div className="card">
+            <h1>Control de asignación de asientos</h1>
+
                 <Menubar model={items} style={{backgroundColor: '#00d7ee', margin: '-2px'}}/>
+            </div>
+            <div>
                 
             </div>
         </>

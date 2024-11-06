@@ -4,20 +4,26 @@ import { Checkbox, Button, Dropdown, Toast } from "primereact";
 import { apiControlTeatro } from '../../service/apiControlTeatro';
 import './LayaoutSillasStyle.css'
 import { textValidator } from '../../helpers/validator';
+import Select from 'react-select';
 
-document.body.style.zoom = '90%';
+
+//document.body.style.zoom = '90%';
 export const LayaoutSillas = () => {
-  const [listSillas, setlistSillas] = useState([]);
+  const [listTeatros, setlistTeatros] = useState([{
+    id: '',
+    nombre: '',
+    cantSillas: 0,
+    sillas: []
+  }]);
   const [eventoOptions, setEventoOptions] = useState([]);
+  const [eventoOptionsFilter, setEventoOptionsFilter] = useState([]);
   const [listEventos, setlistEventos] = useState([]);
   const [selectedEvento, setselectedEvento] = useState('');
-  const [selectedSilla, setSelectedSilla] = useState([
-    // 'A1', 'A2', 'A3', 'A4', 'A5',
-    // 'B1', 'B2', 'B3', 'B4', 'B5',
-    // 'C1', 'C2', 'C3', 'C4', 'C5',
-    // 'D1', 'D2', 'D3', 'D4', 'D5',
-    // 'E1', 'E2', 'E3', 'E4', 'E5',
-  ]);
+  const [selectedEventoId, setselectedEventoId] = useState('');
+  const [teatroSeleccionado, setteatroSelecionado] = useState('');
+  const [listTeatrosSelect, setlistTeatrosSelect] = useState([{ name: '', code: '' }]);
+  const [cantSillas, setcantSillas] = useState(0);
+  const [selectedSilla, setSelectedSilla] = useState([]);
   const toast = useRef(null);
 
   const createToast = (severity, summary, detail) => {
@@ -26,47 +32,68 @@ export const LayaoutSillas = () => {
   useEffect(() => {
     let sillas = [{}];
     let eventos = [];
+    let teatroSelect = [];
 
-    apiControlTeatro.get('silla', '').then(({ data }) => {
-      let datos = data.sort((a, b) => b.fila.localeCompare(a.fila));
-      let asientos = [];
-      let fila = '';
-      for (let x = 0; x < datos.length; x++) {
-        for (let z = 1; z <= datos[x].numSillas; z++) {
-          // if (z === 1) { asientos.push(`${datos[x].fila}`) };
-          asientos.push(`${z}`);
-          fila = datos[x].fila;
-          // if (z === datos[x].numSillas) { asientos.push(`${datos[x].fila}`) };
-          //console.log(isNaN(asientos[z]));
+    apiControlTeatro.get('teatro', '').then(({ data }) => {
+      let teatros = []
+
+      data.forEach(element => {
+        let datos = element.sillas.sort((a, b) => b.fila.localeCompare(a.fila));
+        let asientos = [];
+        let cantAsientos = 0;
+        let fila = '';
+        for (let x = 0; x < datos.length; x++) {
+          for (let z = 1; z <= datos[x].numSillas; z++) {
+            asientos.push(`${z}`);
+            fila = datos[x].fila;
+          }
+          sillas[x] = {
+            sillas: asientos.sort((a, b) => b - a),
+            fila: fila,
+          }
+          cantAsientos += asientos.length
+          asientos = [];
         }
-        sillas[x] = {
-          sillas: asientos.sort((a, b) => b - a),
-          fila: fila,
-        }
-        asientos = [];
-      }
-      setlistSillas(sillas);
+        teatroSelect.push({
+          name: element.nombre,
+          code: element._id
+        });
 
-      console.log(sillas);
-
+        teatros.push({
+          id: element._id,
+          nombre: element.nombre,
+          cantSillas: cantAsientos,
+          sillas
+        });
+        sillas = [{}];
+      });
+      setlistTeatros(teatros);
+      setlistTeatrosSelect(teatroSelect);
     })
 
     apiControlTeatro.get('/evento/programado', '').then(({ data }) => {
       console.log(data);
       setlistEventos(data);
       data.forEach(e => {
-        eventos.push(e.nombre);
+        eventos.push({
+          label: e.nombre,
+          value: e._id,
+          teatro: e.teatros._id
+        });
       });
       setEventoOptions(eventos);
     });
-
-    //apiControlTeatro.get
     clean();
   }, []);
 
   const clean = () => {
     setSelectedSilla([]);
     setselectedEvento('');
+    setselectedEventoId('');
+    setteatroSelecionado('');
+    //setEventoOptions([]);
+    setEventoOptionsFilter([]);
+    setcantSillas(0);
 
     apiControlTeatro.get('/evento/programado', '').then(({ data }) => {
       setlistEventos(data);
@@ -74,15 +101,12 @@ export const LayaoutSillas = () => {
   };
 
   const onSillaChange = (e) => {
-    console.log(e);
-
     let _sillas = [...selectedSilla];
 
     if (e.checked)
       _sillas.push(e.value);
     else
       _sillas.splice(_sillas.indexOf(e.value), 1);
-
 
     setSelectedSilla(_sillas);
   }
@@ -97,16 +121,15 @@ export const LayaoutSillas = () => {
       );
       return;
     }
-    apiControlTeatro.put(`/evento/nombre`,
+    apiControlTeatro.put(`/evento/${selectedEventoId}`,
       {
-        nombre: selectedEvento,
         sillas: selectedSilla,
       })
       .then((response) => {
         console.log(response);
-        
+
         if (response.status === 202) {
-       let eventoFilter = listEventos.filter(evento => evento.nombre !== selectedEvento);
+          let eventoFilter = listEventos.filter(evento => evento._id !== selectedEventoId);
           setlistEventos([...eventoFilter, response.data]);
 
           createToast(
@@ -120,8 +143,8 @@ export const LayaoutSillas = () => {
             'Error',
             response.statusText,
           );
-          return;
           clean();
+          return;
         }
       })
       .catch((err) => {
@@ -136,51 +159,108 @@ export const LayaoutSillas = () => {
   }
 
   const onChangeEvento = (e) => {
-    setselectedEvento(e.value);
-    let silla = listEventos.filter(x => x.nombre === e.value);
-    setSelectedSilla(silla[0].sillas);
+    setselectedEvento(e.label);
+    setselectedEventoId(e.value);
+    let sillas = listEventos.filter(x => x._id === e.value);
+    console.log(sillas);
+
+    setSelectedSilla(sillas[0].sillas);
   };
 
   return (
     <>
       <Toast ref={toast} />
       <br />
-      <div className="card flex justify-content-center" style={{ gap: '15px' }}>
-        <Dropdown
-          value={selectedEvento}
-          onChange={(e) => onChangeEvento(e)}
-          options={eventoOptions}
-          optionLabel="nombre"
-          placeholder="Selecciona evento"
-          className="w-full md:w-25rem" />
-        <Button label="Guardar" severity="info" onClick={guardarAsientos} />
-        <Button label="Limpiar" severity="warning" onClick={clean} />
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '20px'
+      }}>
+        <div className='divSelect'>
+          <label htmlFor="estado" style={{ fontWeight: 100 }}>Teatro</label>
+          <Dropdown
+            value={teatroSeleccionado}
+            onChange={(e) => {
+
+              let eventos = eventoOptions.filter((evento) => evento.teatro === e.value);
+              setEventoOptionsFilter(eventos);
+              let teatroFiltro = listTeatros.filter((t) => t.id === e.value ? t.cantSillas : 0);
+
+              setcantSillas(teatroFiltro[0].cantSillas);
+              setteatroSelecionado(e.value);
+            }}
+            options={listTeatrosSelect}
+            optionLabel="name"
+            optionValue="code"
+            placeholder="Selecciona"
+            className="w-full md:w-25rem" />
+        </div>
+        <div className='divSelect'>
+          <label htmlFor="evento" style={{ fontWeight: 100 }}>Evento</label>
+          <Select
+            onChange={(e) => {
+              console.log(e);
+              onChangeEvento(e);
+            }}
+            options={eventoOptionsFilter}
+            className="w-full md:w-25rem"
+          />
+        </div>
+        <div>
+          <Button label="Guardar" severity="info" onClick={guardarAsientos} />
+        </div>
+        <div>
+          <Button label="Limpiar" severity="warning" onClick={clean} />
+        </div>
+        <div>
+          <p className='pDatoSillas' >
+            <span style={{ fontWeight: 100 }}>Sillas vendidas: </span>
+            <span className='pValorSillas'> {selectedSilla.length} </span>
+          </p>
+          <p className='pDatoSillas'>
+            <span style={{ fontWeight: 100 }}>Sillas disponibles: </span>
+            <span className='pValorSillas'> {cantSillas - selectedSilla.length}</span>
+          </p>
+        </div>
       </div>
-      <h1 className='titulo'>Back</h1>
+      <br />
+      <h1 className='titulo' color='#000000'>{selectedEvento}</h1>
       {
-        listSillas.map((fila) => (
-          <div className='teatro'>
-            <p className='letraDerecha'>{fila.fila}</p>
-            {
-              fila.sillas.map(silla => (
-                <div key={`${fila.fila}${silla}`}
-                  className={`asiento ${selectedSilla.includes(`${fila.fila}${silla}`) ?
-                    "asiento-reservado" : "asiento-disponible"}`}>
-                  <Checkbox
-                    inputId={`${fila.fila}${silla}`}
-                    onChange={onSillaChange}
-                    checked={selectedSilla.includes(`${fila.fila}${silla}`)}
-                    value={`${fila.fila}${silla}`}
-                  />
-                  <p style={{ fontWeight: 900 }}>{silla}</p>
-                </div>
-              ))
-            }
-            <p className='letraIzquierda'>{fila.fila}</p>
+        listTeatros.filter(t => t.id === teatroSeleccionado).map((teatro) => (
+          <div key={teatro.id}>
+            <h1 className='titulo' style={{ color: '#000000' }}>{teatro.nombre}</h1>
+            <h1 className='titulo' style={{ color: '#767676' }}>Back</h1>
+            <div>
+              {
+                teatro.sillas.map((fila) => (
+                  <div className='teatro'>
+                    <p className='letraDerecha'>{fila.fila}</p>
+                    {
+                      fila.sillas.map(silla => (
+                        <div key={`${fila.fila}${silla}`}
+                          className={`asiento ${selectedSilla.includes(`${fila.fila}${silla}`) ?
+                            "asiento-reservado" : "asiento-disponible"}`}>
+                          <Checkbox
+                            inputId={`${fila.fila}${silla}`}
+                            onChange={onSillaChange}
+                            checked={selectedSilla.includes(`${fila.fila}${silla}`)}
+                            value={`${fila.fila}${silla}`}
+                          />
+                          <p style={{ fontWeight: 900 }}>{silla}</p>
+                        </div>
+                      ))
+                    }
+                    <p className='letraIzquierda'>{fila.fila}</p>
+                  </div>
+                ))
+              }
+              <h1 className='titulo' style={{ color: '#767676' }}>Front</h1>
+            </div>
           </div>
-        ))
-      }
-      <h1 className='titulo'>Front</h1>
+
+        ))}
     </>
   )
+
 }

@@ -1,32 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
-  Button, DataTable, Column,
-  FilterMatchMode, InputText, Toast,
-  confirmDialog, ConfirmDialog, Chip, Dropdown
+  DataTable, Column, Tag, Dropdown,
+  FilterMatchMode, Toast
 } from "primereact";
-import DatePicker from 'react-date-picker';
-import 'react-date-picker/dist/DatePicker.css';
-import 'react-calendar/dist/Calendar.css';
 
 import { apiControlTeatro } from '../../service/apiControlTeatro'
 import './EventoStyle.css'
 import { formatearFecha } from '../../helpers/formatear';
 import { textValidator } from '../../helpers/validator';
 
-document.body.style.zoom = '90%';
+import { registerLocale } from "react-datepicker";
+import { es } from 'date-fns/locale/es';
+registerLocale('es', es)
+
+//document.body.style.zoom = '90%';
 export const Evento = () => {
   const [listEventos, setlistEventos] = useState([]);
   const [selectedEvento, setselectedEvento] = useState(null);
+  const [listTeatro, setlistTeatro] = useState([{ name: '', code: '' }]);
   const [valueForm, setvalueForm] = useState({
     nombre: '',
     encargado: '',
+    teatros: '',
     fecha: new Date(),
     estado: 'Programado',
     sillas: []
   });
-  let idEvento = '';
-  const [disabled, setdisabled] = useState(false);
-  const estados = ['Programado', 'Finalizado'];
+  const estados = ['Programado', 'Pendiente', 'Cancelado', 'Finalizado'];
 
   const toast = useRef(null);
 
@@ -35,26 +35,72 @@ export const Evento = () => {
   };
 
   useEffect(() => {
+    let teatro = [];
+    apiControlTeatro.get('teatro', '').then(({ data }) => {
+      data.forEach(element => {
+        teatro.push({
+          name: element.nombre,
+          code: element._id
+        });
+      });
+      setlistTeatro(teatro);
+    });
     apiControlTeatro.get('evento', '').then(({ data }) => {
+      console.log(data);
+
       setlistEventos(data)
     })
     cleanForm();
-  }, [])
+  }, []);
+
+  const [statuses] = useState(['Cancelado', 'Finalizado']);
+
+  const getSeverity = (status) => {
+    switch (status) {
+      case 'Cancelado':
+        return 'danger';
+
+      case 'Finalizado':
+        return 'success';
+
+    }
+  };
+
+  const statusItemTemplate = (option) => {
+    return <Tag value={option}
+    //severity={getSeverity(option)}
+    />;
+  };
+
+  const statusRowFilterTemplate = (options) => {
+    return (
+      <Dropdown value={options.value} options={statuses} onChange={(e) => options.filterApplyCallback(e.value)} itemTemplate={statusItemTemplate} placeholder="Select One" className="p-column-filter" showClear style={{ minWidth: '12rem' }} />
+    );
+  };
+
+  const statusBodyTemplate = (rowData) => {
+    return <Tag value={rowData.status}
+    //severity={getSeverity(rowData.status)} 
+    />;
+  };
 
   const cleanForm = () => {
     setvalueForm({
       nombre: '',
       encargado: '',
+      teatros: '',
       fecha: new Date(),
       estado: 'Programado',
       sillas: []
     });
-    idEvento = '';
     setselectedEvento('');
   };
 
   const onSave = () => {
-    if (!textValidator(valueForm.encargado) || !textValidator(valueForm.nombre) || !textValidator(valueForm.fecha)) {
+    if (!textValidator(valueForm.encargado) ||
+      !textValidator(valueForm.nombre) ||
+      !textValidator(valueForm.fecha) ||
+      !textValidator(valueForm.teatros)) {
       createToast(
         'warn',
         'Acción requerida',
@@ -63,8 +109,8 @@ export const Evento = () => {
       return;
     }
 
-    if (textValidator(idEvento)) {
-      apiControlTeatro.put(`evento/${idEvento}`, valueForm)
+    if (textValidator(selectedEvento)) {
+      apiControlTeatro.put(`evento/${selectedEvento}`, valueForm)
         .then((response) => {
 
           if (response.status === 202) {
@@ -73,7 +119,7 @@ export const Evento = () => {
               'Confirmado',
               'El registro fue editado correctamente'
             );
-            const eventoFiltrados = listEventos.filter((ev) => (ev._id !== idEvento));
+            const eventoFiltrados = listEventos.filter((ev) => (ev._id !== selectedEvento));
             setlistEventos([response.data, ...eventoFiltrados]);
             cleanForm();
           } else {
@@ -131,93 +177,18 @@ export const Evento = () => {
   };
 
   const onCellSelect = (event) => {
-    idEvento = event.rowData._id;
-    setselectedEvento(event.rowData._id);
     if (event.cellIndex === 0) {
-      setdisabled(false);
+      setselectedEvento(event.rowData._id);
+
       setvalueForm({
         nombre: event.rowData.nombre,
         encargado: event.rowData.encargado,
-        fecha: new Date(event.rowData.fecha),
-        estado: event.rowData.estado,
-      })
-    }
-    if (event.cellIndex === 1) {
-      setdisabled(false);
-      handleDelete();
-    }
-    if (event.cellIndex === 2) {
-      setdisabled(true);
-      setvalueForm({
-        nombre: event.rowData.nombre,
-        encargado: event.rowData.encargado,
+        teatros: event.rowData.teatros._id,
         fecha: new Date(event.rowData.fecha),
         estado: event.rowData.estado,
       })
     }
   };
-
-  const handleDelete = () => {
-    confirmDialog({
-      message: `¿Desea eliminar el registro? `,
-      header: 'Eliminar',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'reject',
-      acceptClassName: 'p-button-danger',
-      accept: acceptDialog,
-      reject: rejectDialog
-    });
-  };
-
-  const acceptDialog = () => {
-    if (textValidator(idEvento)) {
-      apiControlTeatro.delete(`evento/${idEvento}`)
-        .then((response) => {
-          if (response.status === 200) {
-            createToast(
-              'success',
-              'Confirmado',
-              'El registro a sido eliminado'
-            );
-            const eventoFiltrado = listEventos.filter((ev) => (ev._id !== idEvento));
-            setlistEventos([...eventoFiltrado]);
-            cleanForm();
-          } else {
-            createToast(
-              'error',
-              'Error',
-              response.statusText,
-            );
-            console.log(response.data);
-            cleanForm();
-            return;
-          }
-        })
-        .catch((err) => {
-          createToast(
-            'error',
-            'Error',
-            'Ha ocurrido un error al intentar crear el registro'
-          );
-          console.log(err);
-          cleanForm();
-        });
-    } else {
-      createToast(
-        'warn',
-        'Acction requerida',
-        'No se selecciono el inventario correctamente'
-      );
-    }
-  }
-
-  const rejectDialog = () => {
-    createToast(
-      'warn',
-      'Cancelado',
-      'Acción cancelada'
-    );
-  }
 
   const renderEditButton = () => {
     return (
@@ -225,19 +196,10 @@ export const Evento = () => {
     );
   };
 
-  const renderDeleteButton = (value) => {
-    return (
-      <i className="pi pi-trash" style={{ color: 'red' }}></i>);
-  };
-
-  const renderEstadoButton = (value) => {
-    return (
-      <Chip label="Cambiar estado" />)
-  };
-
   const [filters] = useState({
     nombre: { value: '', matchMode: FilterMatchMode.STARTS_WITH },
     encargado: { value: '', matchMode: FilterMatchMode.STARTS_WITH },
+    'teatros.nombre': { value: '', matchMode: FilterMatchMode.STARTS_WITH },
     estado: { value: '', matchMode: FilterMatchMode.STARTS_WITH },
   });
 
@@ -255,17 +217,20 @@ export const Evento = () => {
   return (
     <>
       <Toast ref={toast} />
-      <ConfirmDialog />
       <h1 style={{ textAlign: 'center' }}>Lista de Eventos</h1>
       <br />
-      <div className='container'>
+      <div style={{
+        width: '85%',
+        margin: '0 auto',
+      }}>
         <DataTable value={listEventos}
           showGridlines
           stripedRows
+          size="small"
           sortMode="multiple"
           paginator
-          rows={5}
-          rowsPerPageOptions={[5, 10, 20, 30, 40, 50]}
+          rows={10}
+          rowsPerPageOptions={[10, 20, 30, 40, 50]}
           filters={filters}
           filterDisplay='row'
           selectionMode="single"
@@ -277,20 +242,19 @@ export const Evento = () => {
           resizableColumns
         >
           <Column body={renderEditButton} style={{ textAlign: 'center' }}></Column>
-          <Column body={renderDeleteButton} style={{ textAlign: 'center' }}></Column>
-          <Column body={renderEstadoButton} style={{ textAlign: 'center' }}></Column>
           <Column field="nombre" header="Nombre" sortable filter ></Column>
+          <Column field="teatros.nombre" header="Teatro" filter ></Column>
           <Column field="encargado" header="Encargado" filter ></Column>
           <Column field="fecha" header="Fecha" body={(data) => fechaBodyTemplate(data.fecha)}></Column>
           <Column field="estado" header="Estado" filter></Column>
         </DataTable>
-        <div>
+      </div>
+      {/* <div>
           <h1 style={{ textAlign: 'center' }}>Datos sobre el evento</h1>
           <div className='form'>
             <div className="flex flex-column gap-2 input">
               <label htmlFor="nombre" style={{ fontWeight: 100 }}>Nombre</label>
               <InputText
-                disabled={disabled}
                 type="text"
                 id="nombre"
                 name="nombre"
@@ -302,7 +266,6 @@ export const Evento = () => {
             <div className="flex flex-column gap-2 input">
               <label htmlFor="encargado" style={{ fontWeight: 100 }}>Encargado</label>
               <InputText
-                disabled={disabled}
                 type="text"
                 id="encargado"
                 name="encargado"
@@ -311,20 +274,40 @@ export const Evento = () => {
                 className="p-inputtext-sm"
               />
             </div>
-            <DatePicker
-              disabled={disabled}
-              onChange={(e) => {
-                setvalueForm({
-                  ...valueForm,
-                  fecha: e
-                })
-              }
-              }
-              value={valueForm.fecha}
-              format='dd-MM-y'
-            />
+            <div className="flex flex-column gap-2 input">
+              <label htmlFor="estado" style={{ fontWeight: 100 }}>Teatro</label>
+              <Dropdown value={valueForm.teatros}
+                onChange={(e) => {
+                  setvalueForm({
+                    ...valueForm,
+                    teatros: e.value
+                  })
+                }}
+                options={listTeatro}
+                optionLabel="name"
+                optionValue="code"
+                placeholder="Selecciona"
+                className="w-full md:w-25rem" />
+            </div>
+            <div className="flex flex-column gap-2 input">
+              <label htmlFor="fecha" style={{ fontWeight: 100 }}>Fecha</label>
+              <DatePicker
+                selected={valueForm.fecha}
+                onChange={(e) => {
+                  setvalueForm({
+                    ...valueForm,
+                    fecha: e
+                  })
+                }}
+                className="form-control"
+                dateFormat="Pp"
+                showTimeSelect
+                locale="es"
+                timeCaption="Hora"
+              />
+            </div>
             {
-              disabled &&
+              selectedEvento &&
               <div className="flex flex-column gap-2 input">
                 <label htmlFor="estado" style={{ fontWeight: 100 }}>Estado</label>
                 <Dropdown value={valueForm.estado}
@@ -333,7 +316,6 @@ export const Evento = () => {
                   placeholder="Selecciona"
                   className="w-full md:w-14rem" />
               </div>
-
             }
             <br />
             <br />
@@ -345,8 +327,7 @@ export const Evento = () => {
             </div>
 
           </div>
-        </div>
-      </div>
+        </div> */}
     </>
   )
 }
