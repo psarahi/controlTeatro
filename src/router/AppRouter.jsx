@@ -12,7 +12,7 @@ export const AppRouter = () => {
             <Route path="layoutSillas" element={<LayaoutSillas />} />
             <Route path="calendario" element={<Calendario />} />
 
-            <Route path="/*" element={<Evento />} />
+            <Route path="/*" element={<LayaoutSillas />} />
         </Routes>
     )
 }
