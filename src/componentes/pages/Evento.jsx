@@ -241,7 +241,7 @@ export const Evento = () => {
           columnResizeMode="expand"
           resizableColumns
         >
-          <Column body={renderEditButton} style={{ textAlign: 'center' }}></Column>
+          {/* <Column body={renderEditButton} style={{ textAlign: 'center' }}></Column> */}
           <Column field="nombre" header="Nombre" sortable filter ></Column>
           <Column field="teatros.nombre" header="Teatro" filter ></Column>
           <Column field="encargado" header="Encargado" filter ></Column>
