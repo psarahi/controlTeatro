@@ -1,6 +1,4 @@
-import { format } from 'date-fns';
-
+import dayjs from "dayjs";
 export const formatearFecha = ( date )=>{        
-    //const fecha = subHours( date,18)
-    return  format(date, 'yyyy-MM-dd HH:mm a');
+    return dayjs(date).format("YYYY-MM-DD HH:mm");
 }
